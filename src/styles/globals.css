@@ -12,6 +12,10 @@ h3 {
 a {
   @apply text-blue-600;
 }
+[type="search"]::-webkit-search-cancel-button{
+  display: none;
+}
+
 
 @tailwind components;
 @tailwind utilities;
