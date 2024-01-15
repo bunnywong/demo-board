@@ -11,7 +11,7 @@ const IndexPage = () => {
   const [selectedMonths, setSelectedMonths] = useState([])
   const [caregiverName, setCaregiverName] = useState(null)
 
-  // utils:
+  // handlers:
   // dynamic update caregiver data
   const getCaregiver = () => {
     if (!caregiverName) {
@@ -133,7 +133,7 @@ const IndexPage = () => {
     )
   }
   const Column = ({ monthString, days }) => (
-    <div className="self-start border rounded m-3 min-w-60">
+    <div className="self-start border rounded m-3 min-w-72">
       {/* column header */}
       <div className="bg-gray-300 grid grid-cols-5 gap-3 p-3">
         {/* header LHS */}
@@ -249,7 +249,7 @@ const IndexPage = () => {
   }
   const Search = () => {
     return (
-      <div className="mb-3 p-3 sticky top-0 bg-white">
+      <div className="container mx-auto mb-3 p-3 fixed w-full top-0 bg-white">
         <strong className="float-left">Caregiver Name</strong>
         <div className="float-left relative w-64">
           <input
@@ -291,7 +291,7 @@ const IndexPage = () => {
   return (
     <main>
       <Search />
-      <div className="container mx-auto flex">
+      <div className="mt-20 md:mt-16 container mx-auto md:flex">
         {Object.keys(schedule).map((month, index) => (
           <Column monthString={month} days={schedule[month]} key={index} />
         ))}
