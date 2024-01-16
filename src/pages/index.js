@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import dayjs from 'dayjs'
 import _ from 'lodash'
 // custom
-import _dataCaregiver from '../../public/data-caregiver.json'
+import _dataCaregiver from '../../data-caregiver.json'
 import { getScheduleGrouped, getScheduleFlatten } from '../utils'
 
 const IndexPage = () => {
@@ -10,14 +10,20 @@ const IndexPage = () => {
   const [selectedItems, setSelectedItems] = useState([])
   const [selectedMonths, setSelectedMonths] = useState([])
   const [caregiverName, setCaregiverName] = useState(null)
+  const [showCollapse, setShowCollapse] = useState(null)
+  const [newShift, setNewShift] = useState([])
 
   // handlers:
   // dynamic update caregiver data
   const getCaregiver = () => {
-    if (!caregiverName) {
-      return _dataCaregiver
+    let dataCaregiver = _dataCaregiver
+    if (_.size(newShift)) {
+      dataCaregiver = _.concat(dataCaregiver, newShift)
     }
-    return _.filter(_dataCaregiver, (user) => {
+    if (!caregiverName) {
+      return dataCaregiver
+    }
+    return _.filter(dataCaregiver, (user) => {
       const caregiverNameLabel = `${user.lastName} ${user.firstName}${user.chiName}`
       const caregiverNameLabelWithGap = `${user.lastName} ${user.firstName} ${user.chiName}`
       const _caregiverName = caregiverName.toLocaleLowerCase()
@@ -30,7 +36,7 @@ const IndexPage = () => {
   // bulk process with `monthString`, otherwise single's `item`
   const updateStatus = ({ monthString, item, status }) => {
     const _schedule = getScheduleFlatten(schedule)
-    const scheduleUpdated = _.forEach(_schedule, (entry) => {
+    const scheduleUpdated = _.forEach([..._schedule, ...newShift], (entry) => {
       const matchMonth = entry.startedAt.slice(0, 7) === monthString
       const isPending = entry.status === 'PENDING'
       const matchItem =
@@ -42,7 +48,7 @@ const IndexPage = () => {
         entry.status = status
       }
     })
-    setSchedule(getScheduleGrouped(scheduleUpdated))
+    setSchedule(getScheduleGrouped(_.uniqWith(scheduleUpdated, _.isEqual)))
   }
   // handle header checkbox update
   const handleChangeBulk = (e, item) => {
@@ -163,7 +169,7 @@ const IndexPage = () => {
     </div>
   )
   const Duration = ({ start, end }) => {
-    const isSameDay = start.slice(0, 10) === end.slice(0, 10)
+    const isSameDay = start?.slice(0, 10) === end?.slice(0, 10)
     return (
       <p>
         {dayjs(start).format('hh:ss')}
@@ -191,7 +197,10 @@ const IndexPage = () => {
     )
   }
   const Card = ({ item }) => (
-    <div key={item.userId} className="p-3 grid grid-cols-8 gap-4 border-b-2">
+    <div
+      key={item.userId}
+      className="p-3 grid grid-cols-8 gap-4 border-b-2 min-h-40"
+    >
       {/* card LHS */}
       <div>
         {item.status === 'PENDING' && (
@@ -294,14 +303,160 @@ const IndexPage = () => {
             </svg>
           </div>
         </div>
+        <CreateShift />
       </div>
+    )
+  }
+  const CreateShift = () => {
+    function handleSubmit(event) {
+      event.preventDefault()
+      const fomrItems = {
+        startedAt: event.target.startedAt.value,
+        endedAt: event.target.endedAt.value,
+        firstName: event.target.firstName.value,
+        lastName: event.target.lastName.value,
+        chiName: event.target.chiName.value,
+        status: event.target.status.value,
+        userId: event.target.userId.value,
+        role: event.target.role.value,
+      }
+      // skip error/empty handle zzZ
+      setNewShift((oldArray) => [...oldArray, fomrItems])
+
+      setShowCollapse(false)
+    }
+    return (
+      <form onSubmit={handleSubmit}>
+        <button
+          type="button"
+          className="text-white px-2 py-1 rounded absolute right-0"
+          style={{ background: '#16A34A' }}
+          onClick={() => setShowCollapse(!showCollapse)}
+        >
+          {showCollapse ? 'X' : 'Create Shift'}
+        </button>
+        <div
+          className={`hs-collapse w-full overflow-hidden transition-[height] duration-300 ${
+            showCollapse ? '' : 'hidden'
+          }`}
+          aria-labelledby="hs-basic-collapse"
+        >
+          <div class="mt-5 bg-white rounded-lg py-3 px-4 dark:bg-gray-200">
+            <div className="mt-2">
+              <input
+                name="startedAt"
+                type="text"
+                className="p-1 mr-2"
+                placeholder="Started at"
+              />
+              <input
+                name="endedAt"
+                type="text"
+                className="p-1"
+                placeholder="End at"
+              />
+            </div>
+            <div className="mt-2">
+              <input
+                name="firstName"
+                type="text"
+                className="p-1 mr-2"
+                placeholder="First Name"
+              />
+              <input
+                name="lastName"
+                type="text"
+                className="p-1 mr-2"
+                placeholder="Last Name"
+              />
+            </div>
+            <div className="mt-2">
+              <input
+                name="chiName"
+                type="text"
+                className="p-1 mr-2"
+                placeholder="Chinese Name"
+              />
+              <input
+                name="userId"
+                type="text"
+                className="p-1"
+                placeholder="User ID"
+              />
+            </div>
+            {/* radio: status */}
+            <div className="mt-2">
+              <strong>Status: </strong>
+              <input
+                type="radio"
+                name="status"
+                id="statusPending"
+                value="PENDING"
+                checked
+              />
+              <label
+                htmlFor="statusPending"
+                className="ml-1 mr-3"
+                for="statusPending"
+              >
+                PENDING
+              </label>
+              <input
+                type="radio"
+                name="status"
+                id="statusDeclined"
+                value="DECLINED"
+              />
+              <label
+                htmlFor="statusConfirmed"
+                className="ml-1 mr-3"
+                for="statusDeclined"
+              >
+                DECLINED
+              </label>
+              <input
+                type="radio"
+                name="status"
+                id="statusConfirmed"
+                value="CONFIRMED"
+              />
+              <label
+                htmlFor="status"
+                className="ml-1 mr-3"
+                for="statusConfirmed"
+              >
+                CONFIRMED
+              </label>
+            </div>
+            {/* radio: role */}
+            <div className="mt-2">
+              <strong>Role: </strong>
+              <input type="radio" name="role" id="role-st" value="ST" checked />
+              <label htmlFor="role-st" className="ml-1 mr-3" for="role-st">
+                ST
+              </label>
+              <input type="radio" name="role" id="role-pwh" value="PWH" />
+              <label htmlFor="role-pwh" className="ml-1 mr-3" for="role-pwh">
+                PWH
+              </label>
+            </div>
+
+            <button
+              className="bg-green-700 text-white p-2 rounded mt-2 px-5"
+              style={{ background: '#24c08c' }}
+            >
+              Submit
+            </button>
+          </div>
+        </div>
+      </form>
     )
   }
 
   useEffect(() => {
-    const _schedule = getScheduleDaily(getCaregiver())
+    const _schedule = getScheduleGrouped(getCaregiver())
     setSchedule(_schedule)
-  }, [caregiverName]) // eslint-disable-line
+  }, [caregiverName, newShift]) // eslint-disable-line
 
   return (
     <main>
