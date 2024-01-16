@@ -3,7 +3,7 @@ import dayjs from 'dayjs'
 import _ from 'lodash'
 // custom
 import _dataCaregiver from '../../public/data-caregiver.json'
-import { getScheduleDaily } from '../utils'
+import { getScheduleGrouped, getScheduleFlatten } from '../utils'
 
 const IndexPage = () => {
   const [schedule, setSchedule] = useState([])
@@ -29,11 +29,7 @@ const IndexPage = () => {
   }
   // bulk process with `monthString`, otherwise single's `item`
   const updateStatus = ({ monthString, item, status }) => {
-    const _schedule = _.flattenDeep(
-      _.map(schedule, (month) =>
-        _.filter(month, (slots) => _.some(slots, () => true))
-      )
-    )
+    const _schedule = getScheduleFlatten(schedule)
     const scheduleUpdated = _.forEach(_schedule, (entry) => {
       const matchMonth = entry.startedAt.slice(0, 7) === monthString
       const isPending = entry.status === 'PENDING'
@@ -46,7 +42,7 @@ const IndexPage = () => {
         entry.status = status
       }
     })
-    setSchedule(getScheduleDaily(scheduleUpdated))
+    setSchedule(getScheduleGrouped(scheduleUpdated))
   }
   // handle header checkbox update
   const handleChangeBulk = (e, item) => {
